@@ -1,13 +1,21 @@
 #!/bin/bash
 
-## 	This program extracts all programs individually from the PROGRAM.ALL 
-# 	into files. Applicable to FANUC version files 0i, 16i, 18i, 31i
+## 	This program extracts all programs individually from 
+#	the *.ALL or *.CNC into individual files. 
+#
+#	Applicable to FANUC version 
+#		0i, 16i, 18i, 31i
+#
 #	Coded by Sebastian Staitsch
 #	s.staitsch@gmail.com
 #	Version 1.4
 #	last modified: 2020/03/11
-#	INFO: put your Files in same Folder
-#/	USE: sh fanuc.sh
+#	https://github.com/sstaitsch/fanuc
+#
+#	NOTE: Files must be in the same folder as the script file
+#	USE: sh fanuc.sh
+
+########### BEGIN FUNCTIONS ########### 
 
 #GET VERSION 
 	ver_get(){
@@ -83,8 +91,11 @@
 		rm $file
 	}
 
+########### END FUNCTIONS ########### 
+
 #MAIN PROGRAM
-cnt=0
+	if [[ ! $(ls *.ALL 2>/dev/null ) && ! $(ls *.CNC 2>/dev/null ) ]] ; then echo "No *.CNC or *.ALL Files found" ; sleep 2 ; exit ; fi
+	cnt=0
 	for file in *ALL ; do
 		ver_get
 		if [ "$ver" = "31" ] ; then loop31
@@ -98,12 +109,12 @@ cnt=0
 				md5sum 18/* | sort > $ver/md5_all.txt
 		
 			elif [ "$ver" = "0" ] ; then echo "unknown File" ; exit
-			else
-			echo "Error detecting File" ; exit	
+		else
+		echo "Error detecting File" ; exit	
 		fi
 	done
-	
 	d=$(date '+%Y%m%d_%H_%M')
 	if [ -e 31/ ] ; then mv 31/ v31_$d/
 		elif [ -e 18/ ] ; then mv 18/ v18_$d/
+	else exit
 	fi	
