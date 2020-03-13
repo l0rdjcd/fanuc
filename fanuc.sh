@@ -1,23 +1,23 @@
 #!/bin/bash
 
-## 	This program extracts all programs individually from 
-#	the *.ALL or *.CNC into individual files. 
+## 	This program extracts all programs individually from
+#	the *.ALL or *.CNC into individual files.
 #
-#	Applicable to FANUC version 
+#	Applicable to FANUC version
 #		0i, 16i, 18i, 31i
 #
 #	Coded by Sebastian Staitsch
 #	s.staitsch@gmail.com
-#	Version 1.4
-#	last modified: 2020/03/11
+#	Version 1.1
+#	last modified: 2020/03/12
 #	https://github.com/sstaitsch/fanuc
 #
 #	NOTE: Files must be in the same folder as the script file
 #	USE: sh fanuc.sh
 
-########### BEGIN FUNCTIONS ########### 
+########### BEGIN FUNCTIONS ###########
 
-#GET VERSION 
+#GET VERSION
 	ver_get(){
 			if [ "$( egrep -o '<|>' $file)" ] ; then ver=31
 				elif [ "$( egrep -o '<|>' $file )" = "" ] ; then ver=18
@@ -25,9 +25,14 @@
 			fi
 	}
 
+#DELETE CR/LF
+	del_crlf(){
+		cat $file | tr -d '\r' > .tmp ; rm $file ; mv .tmp $file
+	}
+
 #WRITE FILE
 	write_file(){
-		if [ -e $ver/$O_NAME ] ; then 
+		if [ -e $ver/$O_NAME ] ; then
 			(( cnt ++ ))
 			O_NAME2="$O_NAME-$cnt"
 			echo "%" > $ver/$O_NAME2
@@ -39,6 +44,7 @@
 		cat $file | head -$O_LNe >> $ver/$O_NAME
 		echo "%" >> $ver/$O_NAME
 		head -2 $ver/$O_NAME | tail -1
+		echo "$O_NAME"
 		fi
 	}
 
@@ -91,30 +97,32 @@
 		rm $file
 	}
 
-########### END FUNCTIONS ########### 
+########### END FUNCTIONS ###########
 
 #MAIN PROGRAM
-	if [[ ! $(ls *.ALL 2>/dev/null ) && ! $(ls *.CNC 2>/dev/null ) ]] ; then echo "No *.CNC or *.ALL Files found" ; sleep 2 ; exit ; fi
+	if [[ ! $(ls *.ALL 2>/dev/null ) && ! $(ls *.CNC 2>/dev/null ) ]] ; 
+	then echo "No *.CNC or *.ALL Files found" ; sleep 2 ; exit ; fi
 	cnt=0
 	for file in *ALL ; do
+		del_crlf
 		ver_get
 		if [ "$ver" = "31" ] ; then loop31
 				echo "Extracted $(ls $ver | wc -l ) Files. Found $( md5sum 18/* | sort | uniq -D -w 32 | wc -l ) duplicates"
 				md5sum 31/* | sort | uniq -D -w 32 > $ver/md5_duplicates.txt
 				md5sum 31/* | sort > $ver/md5_all.txt
-		
+
 			elif [ "$ver" = "18" ] ; then loop18
 				echo "Extracted $(ls $ver | wc -l ) Files. Found $( md5sum 18/* | sort | uniq -D -w 32 | wc -l ) duplicates"
 				md5sum 18/* | sort | uniq -D -w 32 > $ver/md5_duplicates.txt
 				md5sum 18/* | sort > $ver/md5_all.txt
-		
+
 			elif [ "$ver" = "0" ] ; then echo "unknown File" ; exit
 		else
-		echo "Error detecting File" ; exit	
+		echo "Error detecting File" ; exit
 		fi
 	done
+	
 	d=$(date '+%Y%m%d_%H_%M')
-	if [ -e 31/ ] ; then mv 31/ v31_$d/
-		elif [ -e 18/ ] ; then mv 18/ v18_$d/
-	else exit
-	fi	
+	if [ -e 31/ ] ; then mv 31/ $ver_$d/
+		elif [ -e 18/ ] ; then mv 18/ $ver_$d/
+	fi
