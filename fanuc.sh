@@ -9,7 +9,7 @@
 #	Coded by Sebastian Staitsch
 #	s.staitsch@gmail.com
 #	Version 1.1
-#	last modified: 2020/03/12
+#	last modified: 2020/03/17
 #	https://github.com/sstaitsch/fanuc
 #
 #	NOTE: Files must be in the same folder as the script file
@@ -80,7 +80,7 @@
 		rm $file
 	}
 
-#FANUC 31
+#FANUC 31head
 	loop31(){
 		cp $file $file.bak
 		mkdir $ver 2>/dev/null
