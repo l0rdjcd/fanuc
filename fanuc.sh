@@ -9,7 +9,7 @@
 #	Coded by Sebastian Staitsch
 #	s.staitsch@gmail.com
 #	Version 1.1
-#	last modified: 2020/03/12
+#	last modified: 2020/03/19 00:30:35
 #	https://github.com/sstaitsch/fanuc
 #	https://pastebin.com/4wFFYnw3
 #
@@ -42,13 +42,13 @@
 			echo "%" > $ver/$O_NAME2
 			cat $file | head -$O_LNe >> $ver/$O_NAME2
 			echo "%" >> $ver/$O_NAME2
-			echo "$O_NAME2"
+			echo $( head -2 $ver/$O_NAME2 | tail -n1 ) >> $ver/list.txt
 		else
-		echo "%" > $ver/$O_NAME
-		cat $file | head -$O_LNe >> $ver/$O_NAME
-		echo "%" >> $ver/$O_NAME
-		head -2 $ver/$O_NAME | tail -1
-		echo "$O_NAME"
+			echo "%" > $ver/$O_NAME
+			cat $file | head -$O_LNe >> $ver/$O_NAME
+			echo "%" >> $ver/$O_NAME
+			head -2 $ver/$O_NAME | tail -1
+			echo $( head -2 $ver/$O_NAME | tail -n1 ) >> $ver/list.txt
 		fi
 	}
 
@@ -61,7 +61,7 @@
 
 #DELETE LINES AFTER WRITE
 	del_ln(){
-			O_LNe=$(expr $O_LNe + 1)
+			O_LNe=$( expr $O_LNe + 1 )
 			cat $file | tail -n+$O_LNe > tmp
 			rm $file
 			mv tmp $file
@@ -69,48 +69,47 @@
 
 #FANUC 18
 	loop18(){
+		cnt=0
 		cp $file $file.bak
 		mkdir $ver 2>/dev/null
 		del_firstln
-		until [ "$(cat $file | wc -l)" = "0" ] ; do
+		until [ "$( cat $file | wc -l )" = "0" ] ; do
 			O_NAME=$( egrep -o '^O{1}[0-9]{4}' $file | head -1 )
 			O_LNb=$( egrep -no '^O{1}[0-9]{4}' $file | egrep -o '^[0-9]{1,4}' | head -1 )
 			O_LNe=$( egrep -no '^O{1}[0-9]{4}|^#3000{1}|^%{1}' $file | head -2 | tail -n+2 | egrep -o '^[0-9]{1,4}')
-			O_LNe=$(expr $O_LNe - 1)
+			O_LNe=$( expr $O_LNe - 1 )
 			write_file
 			del_ln
 		done
 		mv $file.bak $file
-		rm $file
 	}
 
 #FANUC 31
 	loop31(){
+		cnt=0
 		cp $file $file.bak
 		mkdir $ver 2>/dev/null
 		del_firstln
-		until [ "$(cat $file | wc -l)" = "0" ] ; do
+		until [ "$( cat $file | wc -l )" = "0" ] ; do
 			O_NAME=$( egrep -o '^<{1}\S*>{1}' $file | tr -d '<>' | head -1 )
 			O_LNb=$( egrep -no '^<' $file | egrep -o '^[0-9]{1,3}' | head -1 )
 			O_LNe=$( egrep -no '^<|^%{1}' $file | head -2 | tail -n-2 | egrep -o '^[0-9]{1,4}')
-			O_LNe=$(expr $O_LNe - 1)
+			O_LNe=$( expr $O_LNe - 1 )
 			write_file
 			del_ln
 		done
 		mv $file.bak $file
-		rm $file
 	}
 
 ########### END FUNCTIONS ###########
 
 #MAIN PROGRAM
-	if [[ ! $(ls *.ALL 2>/dev/null ) && ! $(ls *.CNC 2>/dev/null ) ]] ; 
+	if [[ ! $( ls *.ALL 2>/dev/null ) && ! $( ls *.CNC 2>/dev/null ) ]] ; 
 	then echo "No *.CNC or *.ALL Files found" ; sleep 2 ; exit ; fi
-	cnt=0
 	for file in *ALL ; do
 		del_crlf
 		ver_get
-		if [ "$ver" = "31" ] ; then loop31
+		if [ "$ver" = "31" ] ; then cnt=0 ; loop31
 				echo "Extracted $(ls $ver | wc -l ) Files. Found $( md5sum 18/* | sort | uniq -D -w 32 | wc -l ) duplicates"
 				md5sum 31/* | sort | uniq -D -w 32 > $ver/md5_duplicates.txt
 				md5sum 31/* | sort > $ver/md5_all.txt
@@ -125,8 +124,7 @@
 		echo "Error detecting File" ; exit
 		fi
 	done
-	
-	d=$(date '+%Y%m%d_%H_%M')
-	if [ -e 31/ ] ; then mv 31/ $ver_$d/
-		elif [ -e 18/ ] ; then mv 18/ $ver_$d/
+	d=$(date +"%Y-%m-%d_%H:%M")
+	if [ -e 31/ ] ; then mv 31/ $d/
+		elif [ -e 18/ ] ; then mv 18/ $d/
 	fi
