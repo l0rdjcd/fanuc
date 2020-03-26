@@ -14,7 +14,7 @@
 #	https://pastebin.com/4wFFYnw3
 #
 #	=== VIDEO ===
-#	https://youtu.be/PS7ZXYBhjWQ
+#	https://youtu.be/zgsBnk39xLI
 #
 #	NOTE: Files must be in the same folder as the script file
 #	USE: sh fanuc.sh
