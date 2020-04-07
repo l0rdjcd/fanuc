@@ -6,15 +6,18 @@
 #	Applicable to FANUC version
 #		0i, 16i, 18i, 31i
 #
+#	Runs on Linux, Android and Windows 
+#	(with additional installation of a Linux shell from Microsoft-Store)
+#
 #	Coded by Sebastian Staitsch
 #	s.staitsch@gmail.com
-#	Version 1.1
-#	last modified: 2020/03/19 00:30:35
+#	Version 1.2 Final
+#	last modified: 2020/04/20 20:44:35
 #	https://github.com/sstaitsch/fanuc
 #	https://pastebin.com/4wFFYnw3
 #
 #	=== VIDEO ===
-#	https://youtu.be/zgsBnk39xLI
+#	https://youtu.be/PS7ZXYBhjWQ
 #
 #	NOTE: Files must be in the same folder as the script file
 #	USE: sh fanuc.sh
@@ -92,8 +95,8 @@
 		del_firstln
 		until [ "$( cat $file | wc -l )" = "0" ] ; do
 			O_NAME=$( egrep -o '^<{1}\S*>{1}' $file | tr -d '<>' | head -1 )
-			O_LNb=$( egrep -no '^<' $file | egrep -o '^[0-9]{1,3}' | head -1 )
-			O_LNe=$( egrep -no '^<|^%{1}' $file | head -2 | tail -n-2 | egrep -o '^[0-9]{1,4}')
+			O_LNb=$( egrep -no '^<{1}' $file | egrep -o '^[0-9]{1,3}' | head -1 )
+			O_LNe=$( egrep -no '^<.*>|^%{1}' $file | head -2 | tail -n-1 | egrep -o '^[0-9]{1,4}')
 			O_LNe=$( expr $O_LNe - 1 )
 			write_file
 			del_ln
@@ -125,6 +128,5 @@
 		fi
 	done
 	d=$(date +"%Y-%m-%d_%H:%M")
-	if [ -e 31/ ] ; then mv 31/ $d/
-		elif [ -e 18/ ] ; then mv 18/ $d/
-	fi
+	if [ -d 31/ ] ; then mv 31/ fanuc_31-$d/ ; fi
+	if [ -d 18/ ] ; then mv 18/ fanuc_18-$d/ ; fi
