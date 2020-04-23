@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ## 	This program extracts all programs individually from
-#	the *.ALL or *.CNC into individual files.
+#	the *.ALL into individual files.
 #
 #	Applicable to FANUC version
 #		0i, 16i, 18i, 31i
@@ -11,8 +11,8 @@
 #
 #	Coded by Sebastian Staitsch
 #	s.staitsch@gmail.com
-#	Version 1.2 Final
-#	last modified: 2020/04/20 20:44:35
+#	Version 1.3
+#	last modified: 2020/04/23 20:35:02
 #	https://github.com/sstaitsch/fanuc
 #	https://pastebin.com/4wFFYnw3
 #
@@ -25,108 +25,99 @@
 ########### BEGIN FUNCTIONS ###########
 
 #GET VERSION
-	ver_get(){
-			if [ "$( egrep -o '<|>' $file)" ] ; then ver=31
-				elif [ "$( egrep -o '<|>' $file )" = "" ] ; then ver=18
-			else ver=0
-			fi
+	get_ver(){
+		if [ "$(egrep -o '<|>' $file)" ] ; then v=31
+		elif [ "$(egrep -o '^O{1}[0-9]{4}' $file)" ] ; then v=18
+		else 
+		return 10 ; exit
+		fi
 	}
 
-#DELETE CR/LF
+#READ PROGRAMM-NAME
+	read_oname(){
+		if [ "$v" = "18" ]; then ONAME=$(egrep -om1 'O{1}[0-9]{4}' $file)
+		elif [ "$v" = "31" ]; then ONAME=$(egrep -om1 '^<{1}\S*>{1}' $file | tr -d '<>')
+		else exit
+		fi
+	}
+
+#DELETE CR/LF AND PRERCENT-SYMBOL
 	del_crlf(){
-		cat $file | tr -d '\r' > .tmp ; rm $file ; mv .tmp $file
+		cat $file | tr -d '\r%' > .tmp ; rm $file ; mv .tmp $file
 	}
-
-#WRITE FILE
-	write_file(){
-		if [ -e $ver/$O_NAME ] ; then
-			(( cnt ++ ))
-			O_NAME2="$O_NAME-$cnt"
-			echo "%" > $ver/$O_NAME2
-			cat $file | head -$O_LNe >> $ver/$O_NAME2
-			echo "%" >> $ver/$O_NAME2
-			echo $( head -2 $ver/$O_NAME2 | tail -n1 ) >> $ver/list.txt
-		else
-			echo "%" > $ver/$O_NAME
-			cat $file | head -$O_LNe >> $ver/$O_NAME
-			echo "%" >> $ver/$O_NAME
-			head -2 $ver/$O_NAME | tail -1
-			echo $( head -2 $ver/$O_NAME | tail -n1 ) >> $ver/list.txt
-		fi
+	
+#READ FIRST LINE
+	read_line(){
+		line_1=$(cat $file | head -1)
 	}
-
+	
 #DELETE FIRST LINE
-	del_firstln(){
-		tail -n+2 $file > tmp
-		rm $file
-		mv tmp $file
+	del_line(){
+		tail -n+2 $file > .tmp ; rm $file ; mv .tmp $file
 	}
-
-#DELETE LINES AFTER WRITE
-	del_ln(){
-			O_LNe=$( expr $O_LNe + 1 )
-			cat $file | tail -n+$O_LNe > tmp
-			rm $file
-			mv tmp $file
+	
+#LOOP VERSION 18
+	loop_18(){	
+		until [ "$(cat $file | wc -l)" = 0 ]; do
+			read_line
+			if [ $(echo $line_1 | egrep -o 'O{1}[0-9]{4}') ]; then 
+				read_oname
+				echo $line_1
+				echo $v$file/$ONAME  $line_1  >> list.txt
+			fi
+			echo $line_1 >> $v$file/$ONAME
+			del_line
+			done
 	}
-
-#FANUC 18
-	loop18(){
-		cnt=0
+	
+#LOOP VERSION 31
+	loop_31(){	
+		read_oname
+		until [ "$(cat $file | wc -l)" = 0 ]; do
+			read_line
+			if [ $(echo $line_1 | egrep -o '^<') ]; then 
+				read_oname
+				echo $line_1
+				echo $v$file/$ONAME  $line_1  >> list.txt
+			fi
+			echo $line_1 >> $v$file/$ONAME
+			del_line
+			done
+	}
+	
+#MAIN PROGRAMM
+	if [ ! $( ls *.ALL 2>/dev/null ) ] ; 
+	then echo "No *.ALL Files found" ; sleep 2 ; exit ; fi
+	
+	for file in *ALL ; do 
+		echo ======================================
+		echo NOW SPLIT FILE $file  
+		echo ======================================
 		cp $file $file.bak
-		mkdir $ver 2>/dev/null
-		del_firstln
-		until [ "$( cat $file | wc -l )" = "0" ] ; do
-			O_NAME=$( egrep -o '^O{1}[0-9]{4}' $file | head -1 )
-			O_LNb=$( egrep -no '^O{1}[0-9]{4}' $file | egrep -o '^[0-9]{1,4}' | head -1 )
-			O_LNe=$( egrep -no '^O{1}[0-9]{4}|^#3000{1}|^%{1}' $file | head -2 | tail -n+2 | egrep -o '^[0-9]{1,4}')
-			O_LNe=$( expr $O_LNe - 1 )
-			write_file
-			del_ln
-		done
-		mv $file.bak $file
-	}
-
-#FANUC 31
-	loop31(){
-		cnt=0
-		cp $file $file.bak
-		mkdir $ver 2>/dev/null
-		del_firstln
-		until [ "$( cat $file | wc -l )" = "0" ] ; do
-			O_NAME=$( egrep -o '^<{1}\S*>{1}' $file | tr -d '<>' | head -1 )
-			O_LNb=$( egrep -no '^<{1}' $file | egrep -o '^[0-9]{1,3}' | head -1 )
-			O_LNe=$( egrep -no '^<.*>|^%{1}' $file | head -2 | tail -n-1 | egrep -o '^[0-9]{1,4}')
-			O_LNe=$( expr $O_LNe - 1 )
-			write_file
-			del_ln
-		done
-		mv $file.bak $file
-	}
-
-########### END FUNCTIONS ###########
-
-#MAIN PROGRAM
-	if [[ ! $( ls *.ALL 2>/dev/null ) && ! $( ls *.CNC 2>/dev/null ) ]] ; 
-	then echo "No *.CNC or *.ALL Files found" ; sleep 2 ; exit ; fi
-	for file in *ALL ; do
 		del_crlf
-		ver_get
-		if [ "$ver" = "31" ] ; then cnt=0 ; loop31
-				echo "Extracted $(ls $ver | wc -l ) Files. Found $( md5sum 18/* | sort | uniq -D -w 32 | wc -l ) duplicates"
-				md5sum 31/* | sort | uniq -D -w 32 > $ver/md5_duplicates.txt
-				md5sum 31/* | sort > $ver/md5_all.txt
-
-			elif [ "$ver" = "18" ] ; then loop18
-				echo "Extracted $(ls $ver | wc -l ) Files. Found $( md5sum 18/* | sort | uniq -D -w 32 | wc -l ) duplicates"
-				md5sum 18/* | sort | uniq -D -w 32 > $ver/md5_duplicates.txt
-				md5sum 18/* | sort > $ver/md5_all.txt
-
-			elif [ "$ver" = "0" ] ; then echo "unknown File" ; exit
-		else
-		echo "Error detecting File" ; exit
+		get_ver
+		mkdir $v$file
+		if [ "$v" = "18" ]; then loop_18
+			elif [ "$v" = "31" ]; then loop_31
+			else
+			return 1000; exit
 		fi
+		rm $file
+		mv $file.bak $file
+		echo ======================================
+		echo "Extracted $(ls $v$file | wc -l ) Files."
+		echo ======================================
 	done
-	d=$(date +"%Y-%m-%d_%H:%M")
-	if [ -d 31/ ] ; then mv 31/ fanuc_31-$d/ ; fi
-	if [ -d 18/ ] ; then mv 18/ fanuc_18-$d/ ; fi
+
+#ADD PERCENT-SYMBOL TO EVERY FILE
+	for file in */*; do
+		echo "%" > $file.tmp
+		cat $file >> $file.tmp
+		echo "%" >> $file.tmp
+		rm $file
+		mv $file.tmp $file
+	done
+		
+#SORT PROGRAMMLIST
+	cat list.txt | sort > prg_list.txt
+	rm list.txt
