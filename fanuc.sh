@@ -13,7 +13,7 @@
 #	Coded by Sebastian Staitsch
 #	s.staitsch@gmail.com
 #	Version 1.3
-#	last modified: 2020/04/28 00:27:46
+#	last modified: 2020/04/28 01:25:12
 #	https://github.com/sstaitsch/fanuc
 #	https://pastebin.com/4wFFYnw3
 #
