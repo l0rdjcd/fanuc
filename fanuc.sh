@@ -12,10 +12,10 @@
 #
 #	Coded by Sebastian Staitsch
 #	s.staitsch@gmail.com
-#	Version 1.3
-#	last modified: 2020/04/28 01:25:12
+#	Version 1.4
+#	last modified: 2020/07/03 01:35:46
 #	https://github.com/sstaitsch/fanuc
-#	https://pastebin.com/4wFFYnw3
+#	https://pastebin.com/ZqaZWKvb
 #
 #	=== VIDEO ===
 #	https://youtu.be/zgsBnk39xLI
@@ -81,7 +81,7 @@
 			del_line
 		done
 	}
-	
+
 #MAIN PROGRAMM
 	if [ ! $( ls *.ALL 2>/dev/null ) ] ; then
 		echo "No *.ALL Files found" ; sleep 2; exit 2
@@ -119,7 +119,7 @@
 		rm $file
 		mv $file.tmp $file
 	done
-	
+
 #CREATE A SORTED PROGRAMMLIST
 	cat .list | sort > prglist.txt
 	rm .list
@@ -128,7 +128,7 @@
 	for folder in */; do mv $folder v_$folder; done
 
 #CREATE A ZIP-FILE
-	d=`date +%m-%d-%Y` 
+	d=`date +%d-%m-%Y-%T` 
 	zip -r $d * 1>/dev/null
 
 #CLOSING REPORT
@@ -136,3 +136,6 @@
 	sleep 2
 	echo
 	echo $(wc -l prglist.txt | sed 's/prglist.txt//') programs were exported from $numberfiles files
+
+#DELETE FILES
+sudo rm *ALL
